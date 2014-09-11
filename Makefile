@@ -69,16 +69,13 @@ endif
 
 #Targets with Dependencies##########
 .PHONY: all ivshm-deps ovs-deps qemu-deps
-all: dpdk ovs-deps qemu-deps ivshm-deps
+all: ovs-deps qemu-deps ivshm-deps
 
-ovs-deps: dpdk config-ovs
-	cd $(OVS_DIR) && $(MAKE) -j $(NUMPROC) && cd $(ROOT_DIR)
+ovs-deps: dpdk config-ovs ovs
 
-qemu-deps: dpdk config-qemu
-	cd $(QEMU_DIR) && $(MAKE) -j $(NUMPROC) && cd $(ROOT_DIR)
+qemu-deps: config-qemu qemu
 
-ivshm-deps: dpdk
-	cd $(IVSHM_DIR) && $(MAKE) -j $(NUMPROC) && cd $(ROOT_DIR)
+ivshm-deps: ovs-deps ivshm
 
 #End Targets with Dependencies######
 
@@ -88,7 +85,7 @@ ivshm-deps: dpdk
 config: config-dpdk config-ovs config-qemu
 
 config-dpdk:
-	cd $(DPDK_DIR) && CC=$(CC) EXTRA_CFLAGS=-fPIC $(MAKE) -j $(NUMPROC) config T=$(RTE_TARGET) && cd $(ROOT_DIR)
+	$(MAKE) -C $(DPDK_DIR) CC=$(CC) EXTRA_CFLAGS=-fPIC -j $(NUMPROC) config T=$(RTE_TARGET)
 
 config-ovs:
 	cd $(OVS_DIR) && ./boot.sh && ./configure RTE_SDK=$(DPDK_DIR) --disable-ssl && cd $(ROOT_DIR)
@@ -102,16 +99,16 @@ config-qemu:
 clean: config-dpdk clean-ivshm clean-ovs clean-qemu clean-dpdk
 
 clean-dpdk:
-	cd $(DPDK_DIR) && $(MAKE) clean && cd $(ROOT_DIR)
+	$(MAKE) -C $(DPDK_DIR) clean
 
 clean-qemu:
-	cd $(QEMU_DIR) && $(MAKE) clean && cd $(ROOT_DIR)
+	$(MAKE) -C $(QEMU_DIR) clean
 
 clean-ovs:
-	cd $(OVS_DIR) && $(MAKE) clean && cd $(ROOT_DIR)
+	$(MAKE) -C $(OVS_DIR) clean
 
 clean-ivshm:
-	cd $(IVSHM_DIR) && $(MAKE) clean && cd $(ROOT_DIR)
+	$(MAKE) -C $(IVSHM_DIR) clean
 
 #End Targets for Clean##############
 
@@ -120,7 +117,7 @@ clean-ivshm:
 check: check-ovs
 
 check-ovs:
-	cd $(OVS_DIR) && $(MAKE) check TESTSUITEFLAGS='-k dpdk' && cd $(ROOT_DIR)
+	$(MAKE) -C $(OVS_DIR) check TESTSUITEFLAGS='-k dpdk' && cd $(ROOT_DIR)
 
 #End Targets for Check##############
 
@@ -128,16 +125,16 @@ check-ovs:
 .PHONY: dpdk ivshm ovs qemu docs
 
 dpdk: config-dpdk
-	cd $(DPDK_DIR) && CC=$(CC) EXTRA_CFLAGS=-fPIC $(MAKE) -j $(NUMPROC) CONFIG_RTE_BUILD_COMBINE_LIBS=y CONFIG_RTE_BUILD_SHARED_LIB=y install T=$(RTE_TARGET) && cd $(ROOT_DIR)
+	$(MAKE) -C $(DPDK_DIR) CC=$(CC) EXTRA_CFLAGS=-fPIC -j $(NUMPROC) CONFIG_RTE_BUILD_COMBINE_LIBS=y CONFIG_RTE_BUILD_SHARED_LIB=y install T=$(RTE_TARGET)
 
 ovs:
-	cd $(OVS_DIR) && $(MAKE) && cd $(ROOT_DIR)
+	$(MAKE) -C $(OVS_DIR) -j $(NUMPROC)
 
 qemu:
-	cd $(QEMU_DIR) && $(MAKE) && cd $(ROOT_DIR)
+	$(MAKE) -C $(QEMU_DIR) -j $(NUMPROC)
 
-ivshm: ovs
-	cd $(IVSHM_DIR) && $(MAKE) && cd $(ROOT_DIR)
+ivshm:
+	$(MAKE) -C $(IVSHM_DIR) -j $(NUMPROC)
 
 docs:
 	$(MAKE) -C $(DOC_DIR)
