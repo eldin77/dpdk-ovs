@@ -294,7 +294,7 @@ tx_burst(struct rte_port_veth_writer *p)
 	for (i = tx_count; i < p->tx_buf_count; i++)
 		rte_pktmbuf_free_seg(p->tx_buf[i]);
 
-	p->tx_buf_count -= tx_count;
+	p->tx_buf_count = 0;
 }
 
 /*
