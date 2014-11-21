@@ -547,11 +547,16 @@ send_burst(struct rte_port_vhost_writer *p)
 			        " succeeded\n", __FUNCTION__, p->tx_buf_count,
 			        enq_dev->port_name, num_enqueued);
 
-		for (i = 0; i < p->tx_buf_count; i++)
-			rte_pktmbuf_free_seg(p->tx_buf[i]);
 
-		p->tx_buf_count = 0;
 	}
+
+	/* Free all mbufs even if virtio device is down (i.e. enq_dev == NULL),
+	 * otherwise tx_buf_count is going to overflow.
+	 */
+	for (i = 0; i < p->tx_buf_count; i++)
+		rte_pktmbuf_free_seg(p->tx_buf[i]);
+
+	p->tx_buf_count = 0;
 }
 
 /* Vhost Writer port single-packet transmit function.
