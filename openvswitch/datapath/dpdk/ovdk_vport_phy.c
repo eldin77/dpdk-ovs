@@ -144,6 +144,7 @@ ovdk_vport_phy_port_init(struct vport_info *vport_info,
 	struct rte_port_ethdev_writer_params *port_writer_params = NULL;
 	struct rte_port_ethdev_reader_params *port_reader_params = NULL;
 	struct rte_mempool *mp = NULL;
+	unsigned tx_q_id, lcore_count = rte_lcore_count();
 	unsigned lcore_id = 0;
 	int ret = 0;
 
@@ -170,7 +171,7 @@ ovdk_vport_phy_port_init(struct vport_info *vport_info,
 	ret = rte_eth_dev_configure(
 	        port_id,
 	        1,             /* Currently only one rx queue is supported */
-	        RTE_MAX_LCORE, /* Output queue for every core */
+	        lcore_count,   /* Output queue for enabled lcore */
 	        &port_conf);
 	if (ret < 0)
 		rte_panic("Cannot init NIC port '%u' (%s)\n", port_id,
@@ -190,11 +191,11 @@ ovdk_vport_phy_port_init(struct vport_info *vport_info,
 		rte_panic("Cannot init RX for port '%u' (%s)\n", port_id,
 		          rte_strerror(rte_errno));
 
-	for (lcore_id = 0; lcore_id < RTE_MAX_LCORE; lcore_id++) {
-		/* Init TX queues - One for every lcore*/
+	for (tx_q_id = 0; tx_q_id < lcore_count; tx_q_id++) {
+		/* Init TX queues - One for every lcore which is enabled */
 		ret = rte_eth_tx_queue_setup(
 		        port_id,
-		        lcore_id,
+		        tx_q_id,
 		        PORT_TX_RING_SIZE,
 		        rte_eth_dev_socket_id(port_id),
 		        &tx_conf);
@@ -220,10 +221,13 @@ ovdk_vport_phy_port_init(struct vport_info *vport_info,
 	port_in_params->arg_ah = &vport_info->vportid;
 	port_in_params->burst_size = 32;
 
-	for (lcore_id = 0; lcore_id < RTE_MAX_LCORE; lcore_id++) {
+	for (tx_q_id = 0, lcore_id = 0; lcore_id < RTE_MAX_LCORE; lcore_id++) {
+		/* Assign TX queue only to enbaled lcore */
+		if (!rte_lcore_is_enabled(lcore_id))
+			continue;
 		port_writer_params = &vport_info->phy.port_writer_ethdev_params[lcore_id];
 		port_writer_params->port_id = port_id;
-		port_writer_params->queue_id = lcore_id;
+		port_writer_params->queue_id = tx_q_id;
 		port_writer_params->tx_burst_sz = 32;
 
 		port_out_params = &vport_info->port_out_params[lcore_id];
@@ -232,6 +236,8 @@ ovdk_vport_phy_port_init(struct vport_info *vport_info,
 		port_out_params->f_action = ovdk_stats_port_out_update;
 		port_out_params->f_action_bulk = ovdk_stats_port_out_update_bulk;
 		port_out_params->arg_ah = &vport_info->vportid;
+
+		tx_q_id++;
 	}
 
 	return 0;
