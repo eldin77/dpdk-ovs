@@ -1642,9 +1642,8 @@ dpif_dpdk_queue_to_priority(const struct dpif *dpif OVS_UNUSED,
 static int
 dpif_dpdk_recv(struct dpif *dpif_ OVS_UNUSED,
                struct dpif_upcall *upcall,
-               struct ofpbuf *ofpbuf OVS_UNUSED)
+               struct ofpbuf *buf)
 {
-    struct ofpbuf *buf = NULL;
     struct ofpbuf key = {0};
     struct flow flow;
     struct ovdk_upcall info = {0};
@@ -1657,7 +1656,7 @@ dpif_dpdk_recv(struct dpif *dpif_ OVS_UNUSED,
 
     DPDK_DEBUG()
 
-    if (upcall == NULL || dpif_ == NULL || ofpbuf == NULL) {
+    if (upcall == NULL || dpif_ == NULL || buf == NULL) {
         return EINVAL;
     }
 
@@ -1673,7 +1672,7 @@ dpif_dpdk_recv(struct dpif *dpif_ OVS_UNUSED,
             initial_pipeline = pipeline_id;
         }
 
-        error = dpdk_link_recv_packet(&buf, &info, pipeline_id);
+        error = dpdk_link_recv_packet(buf, &info, pipeline_id);
         if (unlikely(error == EAGAIN)) {
             if (peek_next_pipeline(&last_used_recv_pipeline) == initial_pipeline) {
                 /* As there is nothing left in any of the available pipeline's
@@ -1719,7 +1718,8 @@ dpif_dpdk_recv(struct dpif *dpif_ OVS_UNUSED,
         buf->size -= userdata_len;
         upcall->userdata = ofpbuf_tail(buf);
 
-        upcall->packet = *buf;
+        ofpbuf_use_stub(&upcall->packet, buf->data, buf->size);
+        upcall->packet.size = buf->size;
 
         /* free memory allocated in ofpbuf key */
         ofpbuf_uninit(&key);

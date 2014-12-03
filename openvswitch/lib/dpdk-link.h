@@ -24,6 +24,6 @@ int dpdk_link_init(uint64_t *mask);
 int dpdk_link_send(struct ovdk_message *, const struct ofpbuf *, unsigned pipeline_id);
 int dpdk_link_send_bulk(struct ovdk_message *, const struct ofpbuf *const *, size_t, unsigned pipeline_id);
 int dpdk_link_recv_reply(struct ovdk_message *, unsigned pipeline_id);
-int dpdk_link_recv_packet(struct ofpbuf **, struct ovdk_upcall *, unsigned pipeline_id);
+int dpdk_link_recv_packet(struct ofpbuf *, struct ovdk_upcall *, unsigned pipeline_id);
 
 #endif /* DPDK_LINK_H */

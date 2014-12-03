@@ -279,7 +279,7 @@ dpdk_link_recv_reply(struct ovdk_message *reply, unsigned pipeline_id)
 /* Blocking function that waits for a packet from datapath. 'pkt' will get
  * populated with packet data. */
 int
-dpdk_link_recv_packet(struct ofpbuf **pkt, struct ovdk_upcall *info, unsigned pipeline_id)
+dpdk_link_recv_packet(struct ofpbuf *pkt, struct ovdk_upcall *info, unsigned pipeline_id)
 {
     struct rte_mbuf *mbuf = NULL;
     uint16_t pktmbuf_len = 0;
@@ -295,7 +295,7 @@ dpdk_link_recv_packet(struct ofpbuf **pkt, struct ovdk_upcall *info, unsigned pi
     pktmbuf_len = rte_pktmbuf_data_len(mbuf);
     rte_memcpy(info, pktmbuf_data, sizeof(*info));
     pktmbuf_data = (uint8_t *)pktmbuf_data + sizeof(*info);
-    *pkt = ofpbuf_clone_data(pktmbuf_data, pktmbuf_len - sizeof(*info));
+    ofpbuf_put(pkt, pktmbuf_data, pktmbuf_len - sizeof(*info));
 
     enqueue_packet_mbuf_to_be_freed(mbuf, pipeline_id);
 
