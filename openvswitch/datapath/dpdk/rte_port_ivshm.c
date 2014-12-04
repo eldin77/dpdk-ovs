@@ -390,7 +390,7 @@ send_burst_tx(struct rte_port_ivshm_writer *p)
 		        p->tx_ring->name,
 		        p->tx_buf_count);
 
-	nb_tx = rte_ring_sp_enqueue_burst(p->tx_ring,
+       nb_tx = rte_ring_mp_enqueue_burst(p->tx_ring,
 	                                  (void **)p->tx_buf,
 	                                  p->tx_buf_count);
 
