@@ -215,7 +215,7 @@ ovdk_jobs_stop_slave_lcore(unsigned lcore_id)
 
 	ovdk_joblist_refs[lcore_id]->online = 0; /* request lcore exit */
 	state = rte_eal_get_lcore_state(lcore_id);
-	if (state == RUNNING)
+	if (state == RUNNING || state == FINISHED)
 		return rte_eal_wait_lcore(lcore_id); /* wait for lcore exit */
 	return 0;
 }
